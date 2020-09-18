@@ -58,7 +58,7 @@ int main() {
     // New TH1D
     const int    nbins_pt { 400 };
     const double lobin_pt { 0. };
-    const double hibin_pt {100. * 260100/200 };
+    const double hibin_pt { 100. };
     TH1D* kshort { new TH1D("kshort", "K0 short multiplicity in |eta|<0.5;#it{p}_{T};dK/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
     TH1D* kaon   { new TH1D("kaon", "kaon multiplicity in |eta|<0.5;#it{p}_{T};dK^{-}/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
     TH1D* antikaon   { new TH1D("antikaon", "antikaon multiplicity in |eta|<0.5;#it{p}_{T};dK/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
@@ -66,21 +66,22 @@ int main() {
     TH1D* antipion   { new TH1D("antipion", "anti-pion multiplicity in |eta|<0.5;#it{p}_{T};d#pi^{-}/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
     TH1D* proton   { new TH1D("proton",  "proton multiplicity in |eta|<0.5;#it{p}_{T};d#p/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
     TH1D* pbar   { new TH1D("pbar", "#bar{p} multiplicity in |eta|<0.5;#it{p}_{T};d#bar{p}/d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) }; 
-
+    TH1D* photon { new TH1D("photon", "photon multiplicity in |eta|< 0.5;#it{p}_{T};d#it{p}_{T}",nbins_pt,lobin_pt,hibin_pt) };
+ 
     // Select FastJet parameters
     const double R_FULL       = 0.4;    // Jet size.
     const double R_CH         = 0.4;    // Jet size.
     const double pTMin        = 0.2;    // Min jet pT.
-    const double etaMax { 10. };
+    const double etaMax { 1.3 };
     fastjet::JetDefinition jetdef (fastjet::antikt_algorithm, R_FULL);
     fastjet::Selector jetrap  = fastjet::SelectorAbsRapMax(etaMax)  ; // for full jets
    
     // Initialize Pythia 
     Pythia pythia;
-    const double sNN { 260100 };
+    const double sNN { 200 };
     const double pTHatMin { 1000. };
     const double pTHatMax { 2000. };
-    string name_type = "AuAu";
+    string name_type = "pp";
     int idA; int idB;
     TRandom3 rand{0};   
  
@@ -90,8 +91,8 @@ int main() {
 
     for (auto str : vector<string>{ 
             Form("Beams:eCM = %f",sNN),
-            "HardQCD:all = on",
-            //Form("PhaseSpace:pTHatMin = %f",pTHatMin),
+            "SoftQCD:inelastic = on",
+      	    //Form("PhaseSpace:pTHatMin = %f",pTHatMin),
             //Form("PhaseSpace:pTHatMax = %f",pTHatMax),
             Form("Beams:idA = %i", idA), // moving in +z direction
             Form("Beams:idB = %i", idB), // moving in +z direction
@@ -99,6 +100,7 @@ int main() {
             "ParticleDecays:limitRadius = on",
             Form("ParticleDecays:rMax = %f", 10.),
             Form("Random:seed = %i",rand.Integer(10000000)),
+	    "Next:numberCount = 10000", 
     }) pythia.readString(str.c_str());
 
     pythia.init();
@@ -106,12 +108,13 @@ int main() {
 
     cout << " Starting the pythia loop. " << endl;
 
-    int n_events{1000};
+    int n_events{10000000};
     const double mips_min_p { 0.2 };
+
     for (int iEvent{0}; iEvent < n_events; ++iEvent) {
-        if (!(iEvent % 10000)) {
-            cout << "Finished event " << iEvent << endl;
-        }
+        //if (!(iEvent % 10000)) {
+        //    cout << "Finished event " << iEvent << endl;
+        //}
         if (!pythia.next()) continue;
 
         Event& event = pythia.event;
@@ -139,7 +142,8 @@ int main() {
                 else if (id == -2212) pbar    ->Fill(pt);
                 else if (id ==  211 ) pion    ->Fill(pt);
                 else if (id == -211 ) antipion->Fill(pt);
-            }
+            	else if (id ==  22  ) photon  ->Fill(pt);
+	    }
 
             PseudoJet p {  e.px(), e.py(), e.pz(), e.pAbs() }; // very lazy way to get psuedorapidity
             part_FULL.push_back(p);
