@@ -174,11 +174,11 @@ int main()
             // smear by resolution of EMCAL and HCAL
             if (id == 111 || id == 22 || (id > 11 && id < 18) || (id < -11 && id > -18))
             {
-                es = gaus->Gaus(e.e(), 0.8 * pow((sqrt(e.e())), 3));
+                es = gaus->Gaus(e.e(), 0.1 * (sqrt(e.e())));
             }
             else
             {
-                es = gaus->Gaus(e.e(), 0.7 * sqrt(e.e()));
+                es = gaus->Gaus(e.e(), 0.5 * sqrt(e.e()) + 0.1 * e.e());
             }
 
             if (es < e.m0() || es < 0.2)
@@ -230,13 +230,15 @@ int main()
             p_jet_s[ij] = jetsSMEAR[ij].perp() * TMath::CosH(jetsSMEAR[ij].eta());
             theta_jet_s[ij] = jetsSMEAR[ij].theta();
 
-            tree -> Fill();
         }
 
         // make and use charged jets
         fastjet::ClusterSequence clustSeq_CH(part_CH, jetdef);
         vector<fastjet::PseudoJet> jetsCH = sorted_by_pt(jetrap(clustSeq_CH.inclusive_jets(pTMin)));
         // do something with these jets...
+        
+	tree -> Fill();
+  
     }
     
     cout << " finished PYTHIA loop " << endl;
