@@ -35,7 +35,7 @@ int main()
     // New TTree
     UInt_t ntrials, evid, ncharged, nneutral, nnh, nch, n_decay_photon, njet, njet_s;
     Float_t xsec, x, y, Q2, W2;
-    Float_t e_jet[30], pt_jet[30], eta_jet[30], phi_jet[30], p_jet[30], theta_jet[30], e_jet_s[30], pt_jet_s[30], eta_jet_s[30], phi_jet_s[30], p_jet_s[30],theta_jet_s[30];
+    Float_t e_jet[100], pt_jet[100], eta_jet[100], phi_jet[100], p_jet[100], theta_jet[100], e_jet_s[100], pt_jet_s[100], eta_jet_s[100], phi_jet_s[100], p_jet_s[100],theta_jet_s[100];
  
     TTree *tree = new TTree("Tree", "Tree");
 
@@ -66,27 +66,26 @@ int main()
     tree->Branch("p_jet_s", p_jet_s, "p_jet_s[njet_s]/F");
     tree->Branch("theta_jet_s", theta_jet_s, "theta_jet_s[njet_s]/F");
 
-    // New TH1D
-    const int nbins_pt{100};
-    const double lobin_pt{0.};
-    const double hibin_pt{10.};
-    TH1D *photon_dee{new TH1D("photon dE/E", "photon dE/E;dE/E; count", nbins_pt, -2, 2)};
-    TH1D *pion_dee{new TH1D("pi- dE/E", "pion dE/E;dE/E; count", nbins_pt, -2, 2)};
+    // New histograms
+    TH2D *parton_eta{new TH2D("parton_eta", "parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
+    TH2D *parton_eta_highp{new TH2D("parton_eta_highp", "high momentum (both with p > 10 GeV) parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
+    TH2D *parton_eta_1highp{new TH2D("parton_eta_1highp", "high momentum (one with p > 10 GeV) parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
 
     // Select FastJet parameters
-    const double R_FULL = 0.4; // Jet size.
-    const double R_CH = 0.4;   // Jet size.
+    const double R_FULL = 0.5; // Jet size.
+    const double R_CH = 0.5;   // Jet size.
     const double pTMin = 0.2;  // Min jet pT.
     const double etaMax{4.0};
-    const double etaMin{2.5};
+    const double etaMin{-4.0};
     fastjet::JetDefinition jetdef(fastjet::antikt_algorithm, R_FULL);
     fastjet::Selector jetrap = fastjet::SelectorEtaMin(etaMin + R_FULL) * fastjet::SelectorEtaMax(etaMax - R_FULL); // for full jets
+    fastjet::Selector forward = fastjet::SelectorEtaMin(2.5+R_FULL) * fastjet::SelectorEtaMax(4.0-R_FULL);
 
     // Initialize Pythia
     Pythia pythia;
-    const double sNN{200};
-    const double pTHatMin{1000.};
-    const double pTHatMax{2000.};
+    const double sNN{510};
+    const double pTHatMin{10.};
+    const double pTHatMax{20.};
     string name_type = "pp";
     int idA;
     int idB;
@@ -129,7 +128,7 @@ int main()
 
     cout << " Starting the pythia loop. " << endl;
 
-    int n_events{10000};
+    int n_events{1000000};
     const double mips_min_p{0.2};
 
     for (int iEvent{0}; iEvent < n_events; ++iEvent)
@@ -147,7 +146,16 @@ int main()
         xsec = pythia.info.sigmaGen();
         ntrials = pythia.info.nTried();
  
-        // particle loop
+        // parton histograms
+        parton_eta -> Fill(event[5].eta(), event[6].eta());
+	if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
+		parton_eta_1highp -> Fill(event[5].eta(), event[6].eta());
+		if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
+			parton_eta_highp -> Fill(event[5].eta(), event[6].eta());
+		}
+	}
+
+       // particle loop
         for (int i{0}; i < event.size(); ++i)
         {
             if (!event[i].isFinal())
@@ -165,13 +173,13 @@ int main()
             if (fabs(eta) > etaMax || fabs(eta) < etaMin)
                 continue;
 
-            PseudoJet p{e.px(), e.py(), e.pz(), e.pAbs()};
+	    PseudoJet p{e.px(), e.py(), e.pz(), e.pAbs()};
             part_FULL.push_back(p);
 
             double ratio, es, pxs, pys, pzs, ps;
             int id{e.id()};
 
-            // smear by resolution of EMCAL and HCAL
+            // smear jet potential jet constituents by resolution of EMCAL and HCAL
             if (id == 111 || id == 22 || (id > 11 && id < 18) || (id < -11 && id > -18))
             {
                 es = gaus->Gaus(e.e(), 0.1 * (sqrt(e.e())));
@@ -188,25 +196,26 @@ int main()
                 continue;
 
             ratio = ps / e.pAbs();
-            if (id == 22)
+            /*if (id == 22)
             {
-                //cout << "photon, " << "true e: " << e.e() << ", smeared e: " << es << ", delta e: " << es-e.e() << endl;
                 photon_dee->Fill((es - e.e()) / e.e());
             }
             else if (id == -211)
             {
-                //cout << "pi-, " << "true e: " << e.e() << ", smeared e: " << es << ", delta e: " << es-e.e() << endl;
-                pion_dee->Fill((es - e.e()) / e.e());
+               pion_dee->Fill((es - e.e()) / e.e());
             }
+	    */
 
-            PseudoJet psmeared{e.px() * ratio, e.py() * ratio, e.pz() * ratio, ps}; // very lazy way to get psuedorapidity
+	    PseudoJet psmeared{e.px() * ratio, e.py() * ratio, e.pz() * ratio, ps}; // very lazy way to get psuedorapidity
             part_SMEAR.push_back(psmeared);
         }
 
         // make and use full jets
         fastjet::ClusterSequence clustSeq_FULL(part_FULL, jetdef);
-        vector<fastjet::PseudoJet> jetsFULL = sorted_by_rapidity(jetrap(clustSeq_FULL.inclusive_jets(pTMin)));
-        njet = jetsFULL.size();
+	vector<fastjet::PseudoJet> jetsFULL = sorted_by_rapidity(jetrap(clustSeq_FULL.inclusive_jets(pTMin)));
+	vector<fastjet::PseudoJet> jetsE = sorted_by_E(forward(clustSeq_FULL.inclusive_jets(pTMin)));
+	njet = jetsFULL.size();
+	if (njet > 100)	continue;
 	for (unsigned int ij = 0; ij < jetsFULL.size(); ij++)
         {
             e_jet[ij] = jetsFULL[ij].e();
@@ -221,6 +230,7 @@ int main()
         fastjet::ClusterSequence clustSeq_SMEAR(part_SMEAR, jetdef);
         vector<fastjet::PseudoJet> jetsSMEAR = sorted_by_rapidity(jetrap(clustSeq_SMEAR.inclusive_jets(pTMin)));
         njet_s = jetsSMEAR.size();
+	if (njet_s > 100)	continue;
 	for (unsigned int ij = 0; ij < jetsSMEAR.size(); ij++)
         {
             e_jet_s[ij] = jetsSMEAR[ij].e();
@@ -232,11 +242,12 @@ int main()
 
         }
 
-        // make and use charged jets
+        /* make and use charged jets
         fastjet::ClusterSequence clustSeq_CH(part_CH, jetdef);
         vector<fastjet::PseudoJet> jetsCH = sorted_by_pt(jetrap(clustSeq_CH.inclusive_jets(pTMin)));
-        // do something with these jets...
-        
+        do something with these jets...
+        */
+
 	tree -> Fill();
   
     }
