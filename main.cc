@@ -34,7 +34,7 @@ int main()
 
     // New TTree
     UInt_t ntrials, evid, ncharged, nneutral, nnh, nch, n_decay_photon, njet, njet_s;
-    Float_t xsec, x, y, Q2, W2;
+    Float_t xsec, x, y, Q2, W2, et;
     Float_t e_jet[100], pt_jet[100], eta_jet[100], phi_jet[100], p_jet[100], theta_jet[100], e_jet_s[100], pt_jet_s[100], eta_jet_s[100], phi_jet_s[100], p_jet_s[100],theta_jet_s[100];
  
     TTree *tree = new TTree("Tree", "Tree");
@@ -51,6 +51,7 @@ int main()
     tree->Branch("y", &y, "y/F");
     tree->Branch("Q2", &Q2, "Q2/F");
     tree->Branch("W2", &W2, "W2/F");
+    tree->Branch("et", &et, "et/F");
     tree->Branch("njet", &njet, "njet/I");
     tree->Branch("njet_s", &njet_s, "njet_s/I");
     tree->Branch("e_jet", e_jet, "e_jet[njet]/F");
@@ -91,6 +92,7 @@ int main()
     int idB;
     TRandom3 rand{0};
     TRandom *gaus = new TRandom();
+    TRandom *integer = new TRandom();
 
     if (name_type == "pp")
     {
@@ -140,21 +142,34 @@ int main()
         std::vector<fastjet::PseudoJet> part_FULL;
         std::vector<fastjet::PseudoJet> part_SMEAR;
         std::vector<fastjet::PseudoJet> part_CH;
-        float max_bemc_Et = 0.;
-
+        
         evid = iEvent;
         xsec = pythia.info.sigmaGen();
         ntrials = pythia.info.nTried();
- 
+ 	et = 0.;
+	
         // parton histograms
-        parton_eta -> Fill(event[5].eta(), event[6].eta());
-	if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
-		parton_eta_1highp -> Fill(event[5].eta(), event[6].eta());
-		if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
-			parton_eta_highp -> Fill(event[5].eta(), event[6].eta());
-		}
+        int random = 0;
+	random = integer->Integer(2);
+	if (random == 0){
+		parton_eta -> Fill(event[5].eta(), event[6].eta());
+		if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
+			parton_eta_1highp -> Fill(event[5].eta(), event[6].eta());
+			if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
+				parton_eta_highp -> Fill(event[5].eta(), event[6].eta());
+			}
+		}	
 	}
-
+	else{
+		parton_eta -> Fill(event[6].eta(), event[5].eta());
+		if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
+			parton_eta_1highp -> Fill(event[6].eta(), event[5].eta());
+			if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
+				parton_eta_highp -> Fill(event[6].eta(), event[5].eta());
+			}
+		}	
+	}
+	
        // particle loop
         for (int i{0}; i < event.size(); ++i)
         {
@@ -172,6 +187,10 @@ int main()
             double pt{e.pT()};
             if (fabs(eta) > etaMax || fabs(eta) < etaMin)
                 continue;
+	    
+	    if (eta > 2.5 && eta < 4.0){	    
+	    	et += e.eT();
+	    }
 
 	    PseudoJet p{e.px(), e.py(), e.pz(), e.pAbs()};
             part_FULL.push_back(p);
