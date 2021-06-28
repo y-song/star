@@ -17,7 +17,11 @@
 #include <iostream>
 #include <cstring>
 
+#include "Pythia8/Pythia.h"
+#include "Pythia8/Event.h"
+#include "fastjet/config.h"
 #include "fastjet/PseudoJet.hh"
+#include "fastjet/ClusterSequence.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/Selector.hh"
 #include "Pythia8Plugins/FastJet3.h"
@@ -30,48 +34,42 @@ using namespace std;
 int main()
 {
 
-    TFile *f_out = new TFile("$HOME/output/main.root", "recreate");
+    TFile *f_out = new TFile("$HOME/output/pthat10_test.root", "recreate");
 
     // New TTree
-    UInt_t ntrials, evid, njet, njet_s;
-    Float_t xsec, x, y, Q2, W2, et;
-    Float_t e_jet[100], pt_jet[100], eta_jet[100], phi_jet[100], p_jet[100], theta_jet[100], e_jet_s[100], pt_jet_s[100], eta_jet_s[100], phi_jet_s[100], p_jet_s[100], theta_jet_s[100], ncharged[100], nneutral[100], ncharged_s[100], nneutral_s[100];
+    UInt_t ntrials, evid, njet, ncharged[100], nneutral[100];
+    Float_t xsec, x1, x2, pt3, pt4, eta3, eta4, phi3, phi4, m3, m4, et;
+    Float_t e_jet[100], pt_jet[100], eta_jet[100], phi_jet[100], p_jet[100], m_jet[100], q_jet[100];
  
     TTree *tree = new TTree("Tree", "Tree");
 
     tree->Branch("ntrials", &ntrials, "ntrials/I");
     tree->Branch("evid", &evid, "evid/I");
-    tree->Branch("ncharged", ncharged, "ncharged[njet]/I");
-    tree->Branch("nneutral", nneutral, "nneutral[njet]/I");
-    tree->Branch("ncharged_s", ncharged_s, "ncharged_s[njet]/I");
-    tree->Branch("nneutral_s", nneutral_s, "nneutral_s[njet]/I");
     tree->Branch("xsec", &xsec, "xsec/F");
-    tree->Branch("x", &x, "x/F");
-    tree->Branch("y", &y, "y/F");
-    tree->Branch("Q2", &Q2, "Q2/F");
-    tree->Branch("W2", &W2, "W2/F");
+    tree->Branch("x1", &x1, "x1/F");
+    tree->Branch("x2", &x2, "x2/F");
+    tree->Branch("pt3", &pt3, "pt3/F");
+    tree->Branch("pt4", &pt4, "pt4/F");
+    tree->Branch("eta3", &eta3, "eta3/F");
+    tree->Branch("eta4", &eta4, "eta4/F");
+    tree->Branch("phi3", &phi3, "phi3/F");
+    tree->Branch("phi4", &phi4, "phi4/F");
+    tree->Branch("m3", &m3, "m3/F");
+    tree->Branch("m4", &m4, "m4/F");
     tree->Branch("et", &et, "et/F");
+    
     tree->Branch("njet", &njet, "njet/I");
-    tree->Branch("njet_s", &njet_s, "njet_s/I");
     tree->Branch("e_jet", e_jet, "e_jet[njet]/F");
     tree->Branch("pt_jet", pt_jet, "pt_jet[njet]/F");
     tree->Branch("eta_jet", eta_jet, "eta_jet[njet]/F");
     tree->Branch("phi_jet", phi_jet, "phi_jet[njet]/F");
     tree->Branch("p_jet", p_jet, "p_jet[njet]/F");
-    tree->Branch("theta_jet", theta_jet, "theta_jet[njet]/F");
-    tree->Branch("e_jet_s", e_jet_s, "e_jet_s[njet_s]/F");
-    tree->Branch("pt_jet_s", pt_jet_s, "pt_jet_s[njet_s]/F");
-    tree->Branch("eta_jet_s", eta_jet_s, "eta_jet_s[njet_s]/F");
-    tree->Branch("phi_jet_s", phi_jet_s, "phi_jet_s[njet_s]/F");
-    tree->Branch("p_jet_s", p_jet_s, "p_jet_s[njet_s]/F");
-    tree->Branch("theta_jet_s", theta_jet_s, "theta_jet_s[njet_s]/F");
+    tree->Branch("m_jet", m_jet, "m_jet[njet]/F");
+    tree->Branch("q_jet", m_jet, "q_jet[njet]/F");
+    tree->Branch("ncharged", ncharged, "ncharged[njet]/I");
+    tree->Branch("nneutral", nneutral, "nneutral[njet]/I");
 
-    // New histograms
-    TH2D *parton_eta{new TH2D("parton_eta", "parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
-    TH2D *parton_eta_highp{new TH2D("parton_eta_highp", "high momentum (both with p > 10 GeV) parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
-    TH2D *parton_eta_1highp{new TH2D("parton_eta_1highp", "high momentum (one with p > 10 GeV) parton eta;parton 1 eta;parton 2 eta", 20, -4, 4, 20, -4, 4)};
-
-    // Select FastJet parameters
+   // Select FastJet parameters
     const double R_FULL = 0.5; // Jet size.
     const double R_CH = 0.5;   // Jet size.
     const double pTMin = 0.2;  // Min jet pT.
@@ -79,11 +77,11 @@ int main()
     const double etaMin{-4.0};
     fastjet::JetDefinition jetdef(fastjet::antikt_algorithm, R_FULL);
     fastjet::Selector jetrap = fastjet::SelectorEtaMin(etaMin + R_FULL) * fastjet::SelectorEtaMax(etaMax - R_FULL); // for full jets
-    fastjet::Selector forward = fastjet::SelectorEtaMin(2.5+R_FULL) * fastjet::SelectorEtaMax(4.0-R_FULL);
+    //fastjet::Selector forward = fastjet::SelectorEtaMin(2.5+R_FULL) * fastjet::SelectorEtaMax(4.0-R_FULL);
 
     // Initialize Pythia
     Pythia pythia;
-    const double sNN{510};
+    const double sNN{500};
     const double pTHatMin{10.};
     const double pTHatMax{20.};
     string name_type = "pp";
@@ -112,7 +110,7 @@ int main()
     for (auto str : vector<string>{
              Form("Beams:eCM = %f", sNN),
              "SoftQCD:inelastic = on",
-             //Form("PhaseSpace:pTHatMin = %f",pTHatMin),
+             Form("PhaseSpace:pTHatMin = %f",pTHatMin),
              //Form("PhaseSpace:pTHatMax = %f",pTHatMax),
              Form("Beams:idA = %i", idA), // moving in +z direction
              Form("Beams:idB = %i", idB), // moving in +z direction
@@ -129,7 +127,7 @@ int main()
 
     cout << " Starting the pythia loop. " << endl;
 
-    int n_events{1000000};
+    int n_events{20000};//0000000};
     const double mips_min_p{0.2};
 
     for (int iEvent{0}; iEvent < n_events; ++iEvent)
@@ -139,36 +137,24 @@ int main()
 
         Event &event = pythia.event;
         std::vector<fastjet::PseudoJet> part_FULL;
-        std::vector<fastjet::PseudoJet> part_SMEAR;
-        std::vector<fastjet::PseudoJet> part_CH;
-        
+       
         evid = iEvent;
         xsec = pythia.info.sigmaGen();
         ntrials = pythia.info.nTried();
  	et = 0.;
 	
-        // parton histograms
-        int random = 0;
-	random = integer->Integer(2);
-	if (random == 0){
-		parton_eta -> Fill(event[5].eta(), event[6].eta());
-		if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
-			parton_eta_1highp -> Fill(event[5].eta(), event[6].eta());
-			if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
-				parton_eta_highp -> Fill(event[5].eta(), event[6].eta());
-			}
-		}	
-	}
-	else{
-		parton_eta -> Fill(event[6].eta(), event[5].eta());
-		if (event[5].pAbs() > 10 || event[6].pAbs() > 10){
-			parton_eta_1highp -> Fill(event[6].eta(), event[5].eta());
-			if (event[5].pAbs() > 10 && event[6].pAbs() > 10){
-				parton_eta_highp -> Fill(event[6].eta(), event[5].eta());
-			}
-		}	
-	}
-	
+        // partons 
+        x1 = pythia.info.x1();
+	x2 = pythia.info.x2();
+	pt3 = event[5].pT();
+	pt4 = event[6].pT();
+	eta3 = event[5].eta();
+	eta4 = event[6].eta();
+	phi3 = event[5].phi();
+	phi4 = event[6].phi();
+	m3 = event[5].m();
+	m4 = event[6].m();
+			
        // particle loop
         for (int i{0}; i < event.size(); ++i)
         {
@@ -191,47 +177,14 @@ int main()
 	    	et += e.eT();
 	    }
 
-	    PseudoJet p{e.px(), e.py(), e.pz(), e.pAbs()};
+	    PseudoJet p = event[i];
+	    //PseudoJet p{e.px(), e.py(), e.pz(), e.e()};
             part_FULL.push_back(p);
-
-            double ratio, es, pxs, pys, pzs, ps;
-            int id{e.id()};
-
-            // smear jet potential jet constituents by resolution of EMCAL and HCAL
-            if (id == 111 || id == 22 || (id > 11 && id < 18) || (id < -11 && id > -18))
-            {
-                es = gaus->Gaus(e.e(), 0.1 * (sqrt(e.e())));
-            }
-            else
-            {
-                es = gaus->Gaus(e.e(), 0.5 * sqrt(e.e()) + 0.1 * e.e());
-            }
-
-            if (es < e.m0() || es < 0.2)
-                continue;
-            ps = sqrt(pow(es, 2) - pow(e.m0(), 2));
-            if (ps < 0.2)
-                continue;
-
-            ratio = ps / e.pAbs();
-            /*if (id == 22)
-            {
-                photon_dee->Fill((es - e.e()) / e.e());
-            }
-            else if (id == -211)
-            {
-               pion_dee->Fill((es - e.e()) / e.e());
-            }
-	    */
-
-	    PseudoJet psmeared{e.px() * ratio, e.py() * ratio, e.pz() * ratio, ps}; // very lazy way to get psuedorapidity
-            part_SMEAR.push_back(psmeared);
-        }
+  	}
 
         // make and use full jets
         fastjet::ClusterSequence clustSeq_FULL(part_FULL, jetdef);
-	vector<fastjet::PseudoJet> jetsFULL = sorted_by_rapidity(jetrap(clustSeq_FULL.inclusive_jets(pTMin)));
-	vector<fastjet::PseudoJet> jetsE = sorted_by_E(forward(clustSeq_FULL.inclusive_jets(pTMin)));
+	vector<fastjet::PseudoJet> jetsFULL = sorted_by_pt(jetrap(clustSeq_FULL.inclusive_jets(pTMin)));
 	njet = jetsFULL.size();
 	if (njet > 100)	continue;
 	//jet loop
@@ -242,51 +195,27 @@ int main()
             eta_jet[ij] = jetsFULL[ij].eta();
             phi_jet[ij] = jetsFULL[ij].phi();
             p_jet[ij] = jetsFULL[ij].perp() * TMath::CosH(jetsFULL[ij].eta());
-            theta_jet[ij] = jetsFULL[ij].theta();
-	    
+	    m_jet[ij] = jetsFULL[ij].m();
+   
 	    //jet constituents
 	    vector<fastjet::PseudoJet> constituents = jetsFULL[ij].constituents();
-	    vector<fastjet::PseudoJet> charged = fastjet::SelectorIsCharged()(constituents);
-	    ncharged[ij] = charged.size();
-	    nneutral[ij] = constituents.size() - charged.size();
+	    vector<fastjet::PseudoJet> charged_parts = fastjet::SelectorIsCharged()(constituents);
+	    ncharged[ij] = charged_parts.size();
+	    nneutral[ij] = constituents.size() - charged_parts.size();
+	    q_jet[ij] = 0;
+
+    	    if (charged_parts.size() == 0)	continue;
 	    
+	    double numerator = 0;
+	    for (int i = 0; i < charged_parts.size(); i++){
+		
+		fastjet::PseudoJet charged_part = charged_parts.at(i);
+		double charge = charged_part.user_info<Pythia8::Particle>().charge();
+		numerator += charged_part.perp() * charge;
+	     }
+
+	     q_jet[ij] = numerator / pt_jet[ij];
 	}
-
-        // make and use smeared jets
-        fastjet::ClusterSequence clustSeq_SMEAR(part_SMEAR, jetdef);
-        vector<fastjet::PseudoJet> jetsSMEAR = sorted_by_rapidity(jetrap(clustSeq_SMEAR.inclusive_jets(pTMin)));
-        njet_s = jetsSMEAR.size();
-	if (njet_s > 100)	continue;
-	for (unsigned int ij = 0; ij < jetsSMEAR.size(); ij++)
-        {
-            ncharged_s[ij] = 0;
-	    nneutral_s[ij] = 0;
-	    e_jet_s[ij] = jetsSMEAR[ij].e();
-            pt_jet_s[ij] = jetsSMEAR[ij].perp();
-            eta_jet_s[ij] = jetsSMEAR[ij].eta();
-            phi_jet_s[ij] = jetsSMEAR[ij].phi();
-            p_jet_s[ij] = jetsSMEAR[ij].perp() * TMath::CosH(jetsSMEAR[ij].eta());
-            theta_jet_s[ij] = jetsSMEAR[ij].theta();
-
-	    vector<fastjet::PseudoJet> constituents = jetsSMEAR[ij].constituents();
-	    vector<fastjet::PseudoJet> charged = fastjet::SelectorIsCharged()(constituents);
-	    ncharged_s[ij] = charged.size();
-	    nneutral_s[ij] = constituents.size() - charged.size();
-	    /*//smeared jet constituets loop
-	    for (unsigned int i = 0; i < jetsSMEAR[ij].constituents().size(); i++){
-		auto _part = fastjet::sorted_by_pt(jetsSMEAR[ij].constituents())[i];
-		// count numbers of charged and neutral particles
-		if (_part.user_info<Pythia8::Particle>().isCharged() == true)	ncharged_s[ij] += 1;
-		else	nneutral_s[ij] += 1;
-           }*/
-	}
-
-        /* make and use charged jets
-        fastjet::ClusterSequence clustSeq_CH(part_CH, jetdef);
-        vector<fastjet::PseudoJet> jetsCH = sorted_by_pt(jetrap(clustSeq_CH.inclusive_jets(pTMin)));
-        do something with these jets...
-        */
-
 	tree -> Fill();
   
     }
