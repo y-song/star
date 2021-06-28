@@ -65,7 +65,7 @@ int main()
     tree->Branch("phi_jet", phi_jet, "phi_jet[njet]/F");
     tree->Branch("p_jet", p_jet, "p_jet[njet]/F");
     tree->Branch("m_jet", m_jet, "m_jet[njet]/F");
-    tree->Branch("q_jet", m_jet, "q_jet[njet]/F");
+    tree->Branch("q_jet", q_jet, "q_jet[njet]/F");
     tree->Branch("ncharged", ncharged, "ncharged[njet]/I");
     tree->Branch("nneutral", nneutral, "nneutral[njet]/I");
 
