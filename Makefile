@@ -7,7 +7,7 @@ LIB_TRI=${LIB_PYTH} ${LIB_FASTJET} ${LIB_ROOT}
 
 # compilation option
 CC=g++
-CFLAGS=-std=c++11 -O3 -Wno-deprecated
+CFLAGS=-O3 -Wno-deprecated
 
 main_: main.cc
 	${CC} ${CFLAGS} -o main main.cc ${LIB_TRI}
