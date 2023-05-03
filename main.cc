@@ -1,34 +1,33 @@
 #include "TMath.h"
-#include "Pythia8/Pythia.h"
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TH3D.h"
 #include "TProfile.h"
 #include "TTree.h"
 #include "TFile.h"
-#include "TVectorD.h"
-#include "TStopwatch.h"
-#include "TClonesArray.h"
+//#include "TVectorD.h"
+//#include "TStopwatch.h"
+//#include "TClonesArray.h"
 #include "TObject.h"
 #include <array>
 
 #include "TRandom3.h"
-#include <sstream>
+//#include <sstream>
 #include <iostream>
 #include <cstring>
 
 #include "Pythia8/Pythia.h"
 #include "Pythia8/Event.h"
-#include "fastjet/config.h"
+/*#include "fastjet/config.h"
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/Selector.hh"
 #include "Pythia8Plugins/FastJet3.h"
-#include "Math/ProbFunc.h"
+#include "Math/ProbFunc.h"*/
 
 using namespace Pythia8;
-using namespace fastjet;
+//using namespace fastjet;
 using namespace std;
 
 int main()
@@ -58,7 +57,7 @@ int main()
     int idB = 2212;
     TRandom3 rand{0};
 
-    // to do: implement config from rhig308 files
+    // to do: implement config from rhig308 files, adding in Detroit tune parameters and turning off weak decays
     for (auto str : vector<string>{
              Form("Beams:eCM = %f", sNN),
              "HardQCD:all = on",
